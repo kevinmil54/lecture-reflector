@@ -80,6 +80,24 @@ In every layout except Sidebar and Camera Only, the preview shows two dashed box
 5. Click **Stop Recording**. The video is finalized in seconds, then transcription runs in the background (a few minutes for a typical lecture — you can already play the MP4 while you wait).
 6. Click **Show Recording in Finder** to open the folder with all four files.
 
+### 4. Edit by transcript (optional)
+
+Transcription also saves `lecture-edit.txt`, with one line per stretch of speech:
+
+```
+[12 @ 00:01:23] So today, um, we'll talk about memory.
+```
+
+1. Click **Open Transcript for Editing** (or open `lecture-edit.txt` in any text editor).
+2. Delete whole lines, or words within a line, that you want cut from the video. Leave the `[number @ time]` tag at the start of each line you keep. Changes to punctuation and capitals don't matter. Typing new words has no effect, since the video can only be cut.
+3. Save the file and click **Cut Video from Edited Transcript…**, then choose the recording's folder.
+
+Lecture Reflector writes `lecture-edited.mp4`, with `lecture-edited.srt` and `lecture-edited.txt` timed to match, and `lecture-edited-cuts.txt` listing exactly what was kept. `lecture.mp4` is never changed, so you can edit `lecture-edit.txt` again and re-cut as often as you like.
+
+Recordings made before this feature have no word timing. Choosing one offers to transcribe it again with word timing first (this replaces its `lecture.txt` and `lecture.srt`).
+
+Whisper's word timing is approximate. Lecture Reflector keeps a little room around each remaining word, but check the cuts in the edited video, especially after deleting single short words. Whisper also tends to leave out "um" and "uh", so those usually can't be found in the transcript to delete.
+
 ---
 
 ## Settings

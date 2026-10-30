@@ -190,10 +190,10 @@ struct ContentView: View {
                 actionButtons
             }
 
-            if session.transcribing || !session.statusMessage.isEmpty {
+            if session.transcribing || session.editing || !session.statusMessage.isEmpty {
                 Section("Transcript") {
                     HStack(spacing: 8) {
-                        if session.transcribing {
+                        if session.transcribing || session.editing {
                             ProgressView().controlSize(.small)
                         }
                         Text(session.statusMessage)
@@ -209,6 +209,23 @@ struct ContentView: View {
                         session.revealLastOutput()
                     }
                 }
+            }
+
+            Section("Edit by transcript") {
+                Text("Delete lines or words in a recording's lecture-edit.txt, then cut the video to match. The original recording is not changed.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                if session.lastOutputFolder != nil {
+                    Button("Open Transcript for Editing") {
+                        session.openEditFileForLastRecording()
+                    }
+                    .disabled(session.transcribing || session.editing)
+                }
+                Button("Cut Video from Edited Transcript…") {
+                    Task { await session.cutFromEditedTranscript() }
+                }
+                .disabled(session.transcribing || session.editing
+                          || session.phase == .recording || session.phase == .finishing)
             }
         }
         .formStyle(.grouped)

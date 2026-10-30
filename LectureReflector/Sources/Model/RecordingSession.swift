@@ -52,6 +52,7 @@ final class RecordingSession: ObservableObject {
     @Published var audioLevel: Float = -160
     @Published var audioQuality = AudioQuality()
     @Published var transcribing = false
+    @Published var editing = false
     @Published var statusMessage = ""
     @Published var lastOutputFolder: URL?
     @Published var errorMessage: String?
@@ -508,6 +509,67 @@ final class RecordingSession: ObservableObject {
         if panel.runModal() == .OK, let url = panel.url {
             outputFolder = url
         }
+    }
+
+    // MARK: Editing by transcript
+
+    func openEditFileForLastRecording() {
+        guard let folder = lastOutputFolder else { return }
+        let url = folder.appendingPathComponent(TranscriptEdit.editFileName)
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.open(url)
+        } else {
+            errorMessage = "This recording has no \(TranscriptEdit.editFileName) yet. Use “Cut Video from Edited Transcript…” and choose its folder to transcribe it with word timing."
+        }
+    }
+
+    /// Asks for a recording folder and writes lecture-edited.mp4 from its
+    /// edited lecture-edit.txt. A recording made before word timing existed
+    /// is transcribed again first.
+    func cutFromEditedTranscript() async {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.directoryURL = lastOutputFolder ?? outputFolder
+        panel.prompt = "Choose Recording"
+        panel.message = "Choose a recording folder (the one with lecture.mp4 and lecture-edit.txt)"
+        guard panel.runModal() == .OK, let folder = panel.url else { return }
+
+        guard FileManager.default.fileExists(atPath: folder.appendingPathComponent("lecture.mp4").path) else {
+            errorMessage = "“\(folder.lastPathComponent)” has no lecture.mp4. Choose the folder of one recording."
+            return
+        }
+
+        if !EditExporter.hasWordTimes(in: folder) {
+            let alert = NSAlert()
+            alert.messageText = "This recording has no word timing yet"
+            alert.informativeText = "Lecture Reflector will transcribe it again with word timing, which takes a few minutes. Then edit lecture-edit.txt and choose “Cut Video from Edited Transcript…” again. Its lecture.txt and lecture.srt are replaced with the new transcription."
+            alert.addButton(withTitle: "Transcribe Again")
+            alert.addButton(withTitle: "Cancel")
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            await transcribe(movieURL: folder.appendingPathComponent("lecture.mp4"), folder: folder)
+            let editURL = folder.appendingPathComponent(TranscriptEdit.editFileName)
+            if FileManager.default.fileExists(atPath: editURL.path) {
+                lastOutputFolder = folder
+                statusMessage = "Transcribed with word timing. Edit lecture-edit.txt, then cut the video."
+                NSWorkspace.shared.open(editURL)
+            }
+            return
+        }
+
+        editing = true
+        statusMessage = "Reading the edited transcript…"
+        do {
+            let result = try await EditExporter.cut(folder: folder) { [weak self] message in
+                Task { @MainActor in self?.statusMessage = message }
+            }
+            statusMessage = result.summary
+            NSWorkspace.shared.activateFileViewerSelecting([result.videoURL])
+        } catch {
+            errorMessage = "Could not cut the video: \(error.localizedDescription)"
+            statusMessage = ""
+        }
+        editing = false
     }
 
     func revealLastOutput() {

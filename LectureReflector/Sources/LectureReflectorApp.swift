@@ -23,6 +23,22 @@ struct LectureReflectorApp: App {
             }
             dispatchMain()
         }
+        // Developer path: `LectureReflector --cut <recording folder>` writes
+        // lecture-edited.mp4 from the folder's edited lecture-edit.txt.
+        if let index = args.firstIndex(of: "--cut"), index + 1 < args.count {
+            let folder = URL(fileURLWithPath: args[index + 1], isDirectory: true)
+            Task {
+                do {
+                    let result = try await EditExporter.cut(folder: folder) { print($0) }
+                    print(result.summary)
+                    exit(0)
+                } catch {
+                    FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8))
+                    exit(1)
+                }
+            }
+            dispatchMain()
+        }
     }
 
     var body: some Scene {

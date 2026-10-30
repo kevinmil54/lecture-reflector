@@ -6,6 +6,8 @@ struct TranscriptSegment {
     let start: TimeInterval
     let end: TimeInterval
     let text: String
+    /// Start and end of each word, for editing the video by its transcript.
+    var words: [TranscriptWord] = []
 }
 
 /// On-device Whisper transcription via WhisperKit (Core ML). The model is
@@ -21,7 +23,10 @@ final class Transcriber {
         let whisper = try await WhisperKit(model: model)
 
         progress("Transcribing… this can take a few minutes for a long lecture.")
-        let results = try await whisper.transcribe(audioPath: audioURL.path)
+        // Word timing lets the lecturer cut the video by editing the
+        // transcript (see TranscriptEdit).
+        let options = DecodingOptions(wordTimestamps: true)
+        let results: [TranscriptionResult] = try await whisper.transcribe(audioPath: audioURL.path, decodeOptions: options)
 
         let tokenPattern = try NSRegularExpression(pattern: "<\\|[^|]*\\|>")
         var segments: [TranscriptSegment] = []
@@ -35,10 +40,22 @@ final class Transcriber {
                 )
                 text = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !text.isEmpty else { continue }
+                let words: [TranscriptWord] = (segment.words ?? []).compactMap { timing in
+                    var word = timing.word
+                    word = tokenPattern.stringByReplacingMatches(
+                        in: word,
+                        range: NSRange(word.startIndex..., in: word),
+                        withTemplate: ""
+                    )
+                    word = word.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !word.isEmpty else { return nil }
+                    return TranscriptWord(text: word, start: TimeInterval(timing.start), end: TimeInterval(timing.end))
+                }
                 segments.append(TranscriptSegment(
                     start: TimeInterval(segment.start),
                     end: TimeInterval(segment.end),
-                    text: text
+                    text: text,
+                    words: words
                 ))
             }
         }
@@ -56,6 +73,22 @@ final class Transcriber {
             srt += "\(segment.text)\n\n"
         }
         try srt.write(to: folder.appendingPathComponent("lecture.srt"), atomically: true, encoding: .utf8)
+
+        // For editing by transcript. A new transcription numbers its lines
+        // afresh, so an earlier edit file is kept under another name rather
+        // than matched against the wrong lines.
+        let wordTranscript = WordTranscript(segments: segments.map {
+            WordSegment(start: $0.start, end: $0.end, text: $0.text, words: $0.words)
+        })
+        try wordTranscript.write(to: folder)
+        let editURL = folder.appendingPathComponent(TranscriptEdit.editFileName)
+        if FileManager.default.fileExists(atPath: editURL.path) {
+            let earlier = folder.appendingPathComponent("lecture-edit (earlier transcription).txt")
+            try? FileManager.default.removeItem(at: earlier)
+            try FileManager.default.moveItem(at: editURL, to: earlier)
+        }
+        try TranscriptEdit.editFileText(wordTranscript)
+            .write(to: editURL, atomically: true, encoding: .utf8)
     }
 
     private func extractAudio(from url: URL, to output: URL) async throws {

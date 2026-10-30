@@ -29,6 +29,7 @@ See [LectureReflector_users_guide.md](LectureReflector_users_guide.md) for the f
 3. Pick a layout (Rectangle/Circle PiP, Sidebar, Floating Torso, Slides/Camera Only — switchable live; choose Sidebar *before* recording for the wide 1600×720 frame). Drag the orange box (slides) or blue box (you) in the preview to move them; drag a corner to resize.
 4. **Record** (3-2-1 countdown) → lecture (Pause/Resume available) → **Stop Recording**.
 5. The MP4 is finalized in seconds; transcription runs after and saves `lecture.txt` / `lecture.srt` / `chapters.txt` next to `lecture.mp4` in `Lecture Reflector <title> <date>` inside your chosen output folder (default: Movies).
+6. To cut the video by its transcript, delete lines or words in `lecture-edit.txt` and click **Cut Video from Edited Transcript…**. This writes `lecture-edited.mp4` plus matching `.srt`/`.txt`; the original is untouched. Word timing comes from WhisperKit (`lecture-words.json`); the cut logic is in `Sources/Edit/`. From the command line: `LectureReflector --cut "<recording folder>"`.
 
 ## Permissions
 
