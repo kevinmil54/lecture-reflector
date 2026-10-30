@@ -13,9 +13,11 @@
 		33DD23C20E5E784B48FDA0B8 /* MonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66D97D9DDC6D57B10693B761 /* MonitorView.swift */; };
 		3853ED42B41E32E029D0B07A /* RecordingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06266AF15FE2A2932592C198 /* RecordingSession.swift */; };
 		8224DEB1FC822183B98740AD /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = D67E0F8AA6748152E588BA40 /* Transcriber.swift */; };
+		90B5C51310B5E0F0684AC485 /* EditExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53D4C7AD96F06C554F04F2E /* EditExporter.swift */; };
 		98F1D8BE19DAEC7938CE0513 /* Pipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF40DA4AB193670C3928E9D /* Pipeline.swift */; };
 		9AB551E1430E31EF5F8B1BF8 /* LectureReflectorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F372E9E620943643FF0B58B2 /* LectureReflectorApp.swift */; };
 		9C65EC3998F0005E5E200C33 /* Recorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 394B1905F8738D306049B460 /* Recorder.swift */; };
+		9D8167EC14816CF595331F4F /* TranscriptEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5204FFFB41B70FE43B7E05B6 /* TranscriptEdit.swift */; };
 		AA4DACDF201543541F5EAD19 /* SlideCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84BE0C05C25778E2BF58C5B2 /* SlideCapture.swift */; };
 		B1C8436FB090C8D0D8568CDA /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3862C0A3FEFB3DEA9FFCDA24 /* WhisperKit */; };
 		BFA0C368945C48C42840620B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8952AD5B4020B4CAA9CC8706 /* ContentView.swift */; };
@@ -25,6 +27,7 @@
 /* Begin PBXFileReference section */
 		06266AF15FE2A2932592C198 /* RecordingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingSession.swift; sourceTree = "<group>"; };
 		394B1905F8738D306049B460 /* Recorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recorder.swift; sourceTree = "<group>"; };
+		5204FFFB41B70FE43B7E05B6 /* TranscriptEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptEdit.swift; sourceTree = "<group>"; };
 		6560B2068BDC729670E47461 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		66D97D9DDC6D57B10693B761 /* MonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitorView.swift; sourceTree = "<group>"; };
 		84BE0C05C25778E2BF58C5B2 /* SlideCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideCapture.swift; sourceTree = "<group>"; };
@@ -36,6 +39,7 @@
 		E15D09A110B699DD5A6187D8 /* LectureReflector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LectureReflector.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ECC4B8785BD0C3CEDDF344AE /* Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Layout.swift; sourceTree = "<group>"; };
 		F372E9E620943643FF0B58B2 /* LectureReflectorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureReflectorApp.swift; sourceTree = "<group>"; };
+		F53D4C7AD96F06C554F04F2E /* EditExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExporter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,6 +54,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0BB9C214FC9C566474F54710 /* Edit */ = {
+			isa = PBXGroup;
+			children = (
+				F53D4C7AD96F06C554F04F2E /* EditExporter.swift */,
+				5204FFFB41B70FE43B7E05B6 /* TranscriptEdit.swift */,
+			);
+			path = Edit;
+			sourceTree = "<group>";
+		};
 		55B937BD9A40F9F86355791B /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -97,6 +110,7 @@
 			children = (
 				F372E9E620943643FF0B58B2 /* LectureReflectorApp.swift */,
 				E96759E0AE0404745412B4AF /* Capture */,
+				0BB9C214FC9C566474F54710 /* Edit */,
 				FA3B79E3F6E9D1CFA8D47DA2 /* Engine */,
 				7E2C11933EDAE90059DBF2D1 /* Model */,
 				B63568F41650CBBA594B4D80 /* Transcribe */,
@@ -220,6 +234,7 @@
 				2DCDBAA4D0508BFDD6378240 /* CameraCapture.swift in Sources */,
 				0D1AACB08E1CD8DF1FE2F3FF /* Compositor.swift in Sources */,
 				BFA0C368945C48C42840620B /* ContentView.swift in Sources */,
+				90B5C51310B5E0F0684AC485 /* EditExporter.swift in Sources */,
 				2811877635357174ADFB9DB2 /* Layout.swift in Sources */,
 				9AB551E1430E31EF5F8B1BF8 /* LectureReflectorApp.swift in Sources */,
 				33DD23C20E5E784B48FDA0B8 /* MonitorView.swift in Sources */,
@@ -228,6 +243,7 @@
 				3853ED42B41E32E029D0B07A /* RecordingSession.swift in Sources */,
 				AA4DACDF201543541F5EAD19 /* SlideCapture.swift in Sources */,
 				8224DEB1FC822183B98740AD /* Transcriber.swift in Sources */,
+				9D8167EC14816CF595331F4F /* TranscriptEdit.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
