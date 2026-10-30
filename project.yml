@@ -28,8 +28,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kevinmiller.lecture_reflector
-        MARKETING_VERSION: "0.3.0"
-        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: "0.4.0"
+        CURRENT_PROJECT_VERSION: 4
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_NSCameraUsageDescription: Lecture Reflector shows and records you with the camera as part of the lecture video.

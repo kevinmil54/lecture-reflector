@@ -51,3 +51,7 @@ See [LectureReflector_users_guide.md](LectureReflector_users_guide.md) for the f
 ```
 
 Builds Release, quits any running copy, replaces `/Applications/LectureReflector.app`, and checks the installed version. With `./autobuild.sh` running, creating a file named `.install-request` in this folder does the same; results go to `build-output/install.log`.
+
+## Releasing to other people
+
+`./release.sh` makes a DMG that opens on other Macs without a security warning: a Release build signed with the Developer ID Application certificate, packed in `releases/LectureReflector-<version>.dmg`, notarized by Apple and stapled. The first run offers to save notarization credentials in the keychain under the profile `LectureReflector-notary` (Apple ID plus an app-specific password); set `NOTARY_PROFILE` to use a profile saved under another name. The build log goes to `build-output/release-build.log`. Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` (and run `xcodegen generate`) before each release.
