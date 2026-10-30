@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Build output and local release artifacts
+build-output/
+releases/
+build/
+DerivedData/
+*.dmg
+*.app
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+
+# Dated source snapshots from before this project used git; git history replaces them
+Backups/
+
+# Local Claude settings
+.claude/
+
+# Files from other projects that ended up in this folder
+gemini-code-*.html
+kanfa_development_report.md

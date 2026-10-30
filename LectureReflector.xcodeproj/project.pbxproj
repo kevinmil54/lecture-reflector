@@ -1,0 +1,457 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0D1AACB08E1CD8DF1FE2F3FF /* Compositor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C04352D896B9AE128152CA /* Compositor.swift */; };
+		2811877635357174ADFB9DB2 /* Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECC4B8785BD0C3CEDDF344AE /* Layout.swift */; };
+		2DCDBAA4D0508BFDD6378240 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1255F22AD1DF103F935743 /* CameraCapture.swift */; };
+		33DD23C20E5E784B48FDA0B8 /* MonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66D97D9DDC6D57B10693B761 /* MonitorView.swift */; };
+		3853ED42B41E32E029D0B07A /* RecordingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06266AF15FE2A2932592C198 /* RecordingSession.swift */; };
+		8224DEB1FC822183B98740AD /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = D67E0F8AA6748152E588BA40 /* Transcriber.swift */; };
+		98F1D8BE19DAEC7938CE0513 /* Pipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF40DA4AB193670C3928E9D /* Pipeline.swift */; };
+		9AB551E1430E31EF5F8B1BF8 /* LectureReflectorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F372E9E620943643FF0B58B2 /* LectureReflectorApp.swift */; };
+		9C65EC3998F0005E5E200C33 /* Recorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 394B1905F8738D306049B460 /* Recorder.swift */; };
+		AA4DACDF201543541F5EAD19 /* SlideCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84BE0C05C25778E2BF58C5B2 /* SlideCapture.swift */; };
+		B1C8436FB090C8D0D8568CDA /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3862C0A3FEFB3DEA9FFCDA24 /* WhisperKit */; };
+		BFA0C368945C48C42840620B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8952AD5B4020B4CAA9CC8706 /* ContentView.swift */; };
+		E28A97536A2E0B240032C126 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6560B2068BDC729670E47461 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		06266AF15FE2A2932592C198 /* RecordingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingSession.swift; sourceTree = "<group>"; };
+		394B1905F8738D306049B460 /* Recorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recorder.swift; sourceTree = "<group>"; };
+		6560B2068BDC729670E47461 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		66D97D9DDC6D57B10693B761 /* MonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitorView.swift; sourceTree = "<group>"; };
+		84BE0C05C25778E2BF58C5B2 /* SlideCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideCapture.swift; sourceTree = "<group>"; };
+		8952AD5B4020B4CAA9CC8706 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		ABF40DA4AB193670C3928E9D /* Pipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pipeline.swift; sourceTree = "<group>"; };
+		D4C04352D896B9AE128152CA /* Compositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compositor.swift; sourceTree = "<group>"; };
+		D67E0F8AA6748152E588BA40 /* Transcriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcriber.swift; sourceTree = "<group>"; };
+		DD1255F22AD1DF103F935743 /* CameraCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCapture.swift; sourceTree = "<group>"; };
+		E15D09A110B699DD5A6187D8 /* LectureReflector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LectureReflector.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ECC4B8785BD0C3CEDDF344AE /* Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Layout.swift; sourceTree = "<group>"; };
+		F372E9E620943643FF0B58B2 /* LectureReflectorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureReflectorApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		79D000EB1D28D48DCED5185B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1C8436FB090C8D0D8568CDA /* WhisperKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		55B937BD9A40F9F86355791B /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				6560B2068BDC729670E47461 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		6BA149C5379A7894586E697A = {
+			isa = PBXGroup;
+			children = (
+				D63E6BFEB679747861A79E20 /* LectureReflector */,
+				CFD370759C7297F016D4B152 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7E2C11933EDAE90059DBF2D1 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				ECC4B8785BD0C3CEDDF344AE /* Layout.swift */,
+				06266AF15FE2A2932592C198 /* RecordingSession.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		9F1E804867F53F33B0DFE128 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				8952AD5B4020B4CAA9CC8706 /* ContentView.swift */,
+				66D97D9DDC6D57B10693B761 /* MonitorView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		B63568F41650CBBA594B4D80 /* Transcribe */ = {
+			isa = PBXGroup;
+			children = (
+				D67E0F8AA6748152E588BA40 /* Transcriber.swift */,
+			);
+			path = Transcribe;
+			sourceTree = "<group>";
+		};
+		BF20F8573D0C708DC0AC13F5 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				F372E9E620943643FF0B58B2 /* LectureReflectorApp.swift */,
+				E96759E0AE0404745412B4AF /* Capture */,
+				FA3B79E3F6E9D1CFA8D47DA2 /* Engine */,
+				7E2C11933EDAE90059DBF2D1 /* Model */,
+				B63568F41650CBBA594B4D80 /* Transcribe */,
+				9F1E804867F53F33B0DFE128 /* UI */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		CFD370759C7297F016D4B152 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E15D09A110B699DD5A6187D8 /* LectureReflector.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D63E6BFEB679747861A79E20 /* LectureReflector */ = {
+			isa = PBXGroup;
+			children = (
+				55B937BD9A40F9F86355791B /* Resources */,
+				BF20F8573D0C708DC0AC13F5 /* Sources */,
+			);
+			path = LectureReflector;
+			sourceTree = "<group>";
+		};
+		E96759E0AE0404745412B4AF /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				DD1255F22AD1DF103F935743 /* CameraCapture.swift */,
+				84BE0C05C25778E2BF58C5B2 /* SlideCapture.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		FA3B79E3F6E9D1CFA8D47DA2 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				D4C04352D896B9AE128152CA /* Compositor.swift */,
+				ABF40DA4AB193670C3928E9D /* Pipeline.swift */,
+				394B1905F8738D306049B460 /* Recorder.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		004F1AACFE1AD09C96232A6A /* LectureReflector */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D15E1CFED6B5C6E1C1383B5E /* Build configuration list for PBXNativeTarget "LectureReflector" */;
+			buildPhases = (
+				BF14F9FC2B35D3D3F0A11F91 /* Sources */,
+				EC36A298CCB859C47E06992A /* Resources */,
+				79D000EB1D28D48DCED5185B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LectureReflector;
+			packageProductDependencies = (
+				3862C0A3FEFB3DEA9FFCDA24 /* WhisperKit */,
+			);
+			productName = LectureReflector;
+			productReference = E15D09A110B699DD5A6187D8 /* LectureReflector.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		51C21330264CAACAA6292DCA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					004F1AACFE1AD09C96232A6A = {
+						DevelopmentTeam = YCTW9YH58J;
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 5DEEDBBAE4F212F304359662 /* Build configuration list for PBXProject "LectureReflector" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 6BA149C5379A7894586E697A;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A95CA220DD3636A321B6310C /* XCRemoteSwiftPackageReference "WhisperKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CFD370759C7297F016D4B152 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				004F1AACFE1AD09C96232A6A /* LectureReflector */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		EC36A298CCB859C47E06992A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E28A97536A2E0B240032C126 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BF14F9FC2B35D3D3F0A11F91 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2DCDBAA4D0508BFDD6378240 /* CameraCapture.swift in Sources */,
+				0D1AACB08E1CD8DF1FE2F3FF /* Compositor.swift in Sources */,
+				BFA0C368945C48C42840620B /* ContentView.swift in Sources */,
+				2811877635357174ADFB9DB2 /* Layout.swift in Sources */,
+				9AB551E1430E31EF5F8B1BF8 /* LectureReflectorApp.swift in Sources */,
+				33DD23C20E5E784B48FDA0B8 /* MonitorView.swift in Sources */,
+				98F1D8BE19DAEC7938CE0513 /* Pipeline.swift in Sources */,
+				9C65EC3998F0005E5E200C33 /* Recorder.swift in Sources */,
+				3853ED42B41E32E029D0B07A /* RecordingSession.swift in Sources */,
+				AA4DACDF201543541F5EAD19 /* SlideCapture.swift in Sources */,
+				8224DEB1FC822183B98740AD /* Transcriber.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		306EEE1238EAFF42A73063E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A9BB5CA80C2C6848077975A0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = LectureReflector/LectureReflector.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = YCTW9YH58J;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleExecutable = "Lecture Reflector";
+				INFOPLIST_KEY_CFBundleName = "Lecture Reflector";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Lecture Reflector shows and records you with the camera as part of the lecture video.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Timely Snow LLC. All rights reserved.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Lecture Reflector records your voice for the lecture video and its transcript.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kevinmiller.lecture_reflector;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		AFE86270EA917548D4471C2C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = LectureReflector/LectureReflector.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = YCTW9YH58J;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleExecutable = "Lecture Reflector";
+				INFOPLIST_KEY_CFBundleName = "Lecture Reflector";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Lecture Reflector shows and records you with the camera as part of the lecture video.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Timely Snow LLC. All rights reserved.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Lecture Reflector records your voice for the lecture video and its transcript.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kevinmiller.lecture_reflector;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		FD255A8680E00FB6624FA8BE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5DEEDBBAE4F212F304359662 /* Build configuration list for PBXProject "LectureReflector" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FD255A8680E00FB6624FA8BE /* Debug */,
+				306EEE1238EAFF42A73063E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D15E1CFED6B5C6E1C1383B5E /* Build configuration list for PBXNativeTarget "LectureReflector" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AFE86270EA917548D4471C2C /* Debug */,
+				A9BB5CA80C2C6848077975A0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A95CA220DD3636A321B6310C /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3862C0A3FEFB3DEA9FFCDA24 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A95CA220DD3636A321B6310C /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 51C21330264CAACAA6292DCA /* Project object */;
+}
