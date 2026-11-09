@@ -12,6 +12,7 @@ final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
     private let audioQueue = DispatchQueue(label: "lecture_reflector.camera.audio", qos: .userInitiated)
     private var videoOutput: AVCaptureVideoDataOutput?
     private var audioOutput: AVCaptureAudioDataOutput?
+    private var cameraInput: AVCaptureDeviceInput?
 
     private let lock = NSLock()
     private var _latest: CVPixelBuffer?
@@ -63,6 +64,7 @@ final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
             throw LectureReflectorError("Cannot open camera \(camera.localizedName)")
         }
         session.addInput(cameraInput)
+        self.cameraInput = cameraInput
 
         if let microphone {
             let micInput = try AVCaptureDeviceInput(device: microphone)
@@ -105,6 +107,23 @@ final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
         videoQueue.async { [session] in
             session.startRunning()
         }
+    }
+
+    /// Swaps the camera while running. Only the video input changes, so the
+    /// microphone and the recording's audio carry on uninterrupted.
+    func switchCamera(to camera: AVCaptureDevice) throws {
+        guard cameraInput?.device.uniqueID != camera.uniqueID else { return }
+        let newInput = try AVCaptureDeviceInput(device: camera)
+        session.beginConfiguration()
+        if let old = cameraInput { session.removeInput(old) }
+        guard session.canAddInput(newInput) else {
+            if let old = cameraInput, session.canAddInput(old) { session.addInput(old) }
+            session.commitConfiguration()
+            throw LectureReflectorError("Cannot open camera \(camera.localizedName)")
+        }
+        session.addInput(newInput)
+        cameraInput = newInput
+        session.commitConfiguration()
     }
 
     func stop() {

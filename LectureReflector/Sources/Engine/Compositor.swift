@@ -38,7 +38,8 @@ final class Compositor {
         canvasSize: CGSize,
         mirrorCamera: Bool,
         placement: LecturerPlacement,
-        slidePlacement: LecturerPlacement
+        slidePlacement: LecturerPlacement,
+        framing: CameraFraming = .none
     ) -> (CVPixelBuffer, CIImage)? {
         let frame = CGRect(origin: .zero, size: canvasSize)
         var canvas = CIImage(color: .black).cropped(to: frame)
@@ -47,6 +48,9 @@ final class Compositor {
         var cameraImage = camera.map { CIImage(cvPixelBuffer: $0) }
         if mirrorCamera, let image = cameraImage {
             cameraImage = image.oriented(.upMirrored)
+        }
+        if let image = cameraImage {
+            cameraImage = zoomed(image, framing)
         }
 
         // Slide area (top-left-origin fractions → Core Image's bottom-left origin).
@@ -97,7 +101,7 @@ final class Compositor {
                         let cutoutFilter = CIFilter.blendWithMask()
                         cutoutFilter.inputImage = cameraImage
                         cutoutFilter.backgroundImage = CIImage(color: .clear).cropped(to: cameraImage.extent)
-                        cutoutFilter.maskImage = mask
+                        cutoutFilter.maskImage = zoomed(mask, framing)
                         if let cutout = cutoutFilter.outputImage {
                             canvas = aspectFill(cutout, in: lecturerRect).composited(over: canvas)
                         }
@@ -185,6 +189,19 @@ final class Compositor {
 
     // MARK: - Layout helpers
 
+    /// Digital zoom: crops into the image around its center, shifted by the
+    /// pan, and moves the result back to the origin.
+    private func zoomed(_ image: CIImage, _ framing: CameraFraming) -> CIImage {
+        guard framing.zoom > 1.001 else { return image }
+        let e = image.extent
+        let w = e.width / framing.zoom
+        let h = e.height / framing.zoom
+        let cx = e.midX + framing.panX * (e.width - w) / 2
+        let cy = e.midY + framing.panY * (e.height - h) / 2
+        let rect = CGRect(x: cx - w / 2, y: cy - h / 2, width: w, height: h)
+        return image.cropped(to: rect).transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
+    }
+
     /// Scale to fit entirely inside `rect`, centered (letterboxed on black).
     private func aspectFit(_ image: CIImage, in rect: CGRect) -> CIImage {
         let extent = image.extent
@@ -256,4 +273,15 @@ final class Compositor {
         CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &buffer)
         return buffer
     }
+}
+
+
+/// Digital zoom and pan of the camera picture. `zoom` is 1…4; pan runs
+/// -1…1 (right and up positive, as seen in the preview), and only matters
+/// when zoomed in.
+struct CameraFraming: Equatable {
+    var zoom: CGFloat = 1
+    var panX: CGFloat = 0
+    var panY: CGFloat = 0
+    static let none = CameraFraming()
 }

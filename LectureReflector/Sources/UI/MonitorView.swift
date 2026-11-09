@@ -11,13 +11,24 @@ struct MonitorView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            VStack(alignment: .leading, spacing: 12) {
-                timing(now: context.date)
-                Divider()
-                mic
+            HStack(alignment: .top, spacing: 16) {
+                preview
+                VStack(alignment: .leading, spacing: 12) {
+                    timing(now: context.date)
+                    Divider()
+                    switchButtons
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.magnifyingglass").foregroundStyle(.secondary)
+                        Slider(value: $session.cameraZoom, in: 1...4)
+                        Text(String(format: "%.1f×", session.cameraZoom)).font(.caption).monospacedDigit().frame(width: 32, alignment: .trailing)
+                    }
+                    .help("Camera zoom")
+                    Divider()
+                    mic
+                }
+                .frame(width: 300, alignment: .leading)
             }
             .padding(16)
-            .frame(width: 300, alignment: .leading)
         }
         .background(FloatingWindow())
     }
@@ -42,11 +53,20 @@ struct MonitorView: View {
                     .font(.system(size: 34, weight: .light, design: .rounded))
                     .monospacedDigit()
             }
-            if session.phase == .recording, let demo = session.demoAppName {
+            if session.phase == .recording, session.cameraFullScreenActive {
+                Label("Camera full screen (\(HotKeys.cameraLabel) to go back)", systemImage: "person.fill")
+                    .font(.callout)
+                    .foregroundStyle(.purple)
+            } else if session.phase == .recording, let demo = session.demoAppName {
                 Label("Recording \(demo)", systemImage: "cursorarrow.rays")
                     .font(.callout)
                     .foregroundStyle(.blue)
             } else if session.phase == .recording {
+                if session.slidesSourceIsWindow == false, !session.slideSourceStatus.isEmpty {
+                    Text("Recording: \(session.slideSourceStatus)  (\(HotKeys.switchScreenLabel) to switch)")
+                        .font(.callout)
+                        .foregroundStyle(.blue)
+                }
                 Text("Slide \(changes.count + 1)  ·  \(timeString(onSlide)) on this slide")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -57,6 +77,170 @@ struct MonitorView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    // MARK: Preview
+
+    /// What is being recorded, live, with the name of the app on screen.
+    private var preview: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ZStack {
+                Color.black
+                if let image = session.previewImage {
+                    Image(decorative: image, scale: 1)
+                        .resizable()
+                        .scaledToFit()
+                } else {
+                    Text("Start the preview to see what is recorded")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let value = session.countdownValue {
+                    Text("\(value)")
+                        .font(.system(size: 110, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .shadow(radius: 12)
+                }
+            }
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .frame(width: 400)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            if session.phase != .idle {
+                Label(session.slidesSourceIsWindow ? session.activeTarget.label : session.slideSourceStatus,
+                      systemImage: "record.circle")
+                    .font(.callout.weight(.medium))
+                    .lineLimit(1)
+            }
+            recordControls
+        }
+        .frame(width: 400)
+    }
+
+    // MARK: Record / stop (same actions as the main window)
+
+    @ViewBuilder
+    private var recordControls: some View {
+        switch session.phase {
+        case .idle:
+            Button {
+                Task { await session.startPreview() }
+            } label: {
+                Label("Start Preview", systemImage: "eye").frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+
+        case .previewing:
+            Button {
+                Task { await session.startRecording() }
+            } label: {
+                Label("Record", systemImage: "record.circle.fill").frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .disabled(session.transcribing)
+
+        case .countdown:
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text(session.countdownValue.map { "Starting in \($0)…" } ?? "Starting…")
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+
+        case .recording:
+            HStack(spacing: 8) {
+                Button {
+                    Task { await session.stopRecording() }
+                } label: {
+                    Label("Stop Recording", systemImage: "stop.circle.fill").frame(maxWidth: .infinity)
+                }
+                .controlSize(.large)
+                .buttonStyle(.borderedProminent)
+                Button(session.isPaused ? "Resume" : "Pause") {
+                    session.togglePause()
+                }
+                .controlSize(.large)
+            }
+
+        case .finishing:
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Finalizing…").foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // MARK: Switching
+
+    /// Click to record that window. The current one is marked.
+    private var targetList: some View {
+        let active = session.activeTarget
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Record").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text("\(HotKeys.switchAppLabel) = next").font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(session.targets) { target in
+                Button {
+                    Task { await session.select(target) }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: target == active ? "record.circle.fill" : "circle")
+                            .foregroundStyle(target == active ? Color.red : Color.secondary)
+                        Text(target.label).lineLimit(1).truncationMode(.middle)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .font(.callout.weight(target == active ? .semibold : .regular))
+            }
+            if session.targets.count == 1 {
+                Text("Add apps or windows in the main window.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var switchButtons: some View {
+        let live = session.phase == .previewing || session.phase == .recording || session.phase == .countdown
+        return VStack(spacing: 8) {
+        if session.slidesSourceIsWindow {
+            targetList
+        }
+        HStack(spacing: 8) {
+            Button {
+                Task { await session.switchScreen() }
+            } label: {
+                Label("Switch Screen", systemImage: "rectangle.on.rectangle")
+                    .frame(maxWidth: .infinity)
+            }
+            .help("Record the other screen (\(HotKeys.switchScreenLabel))")
+            Button {
+                session.toggleCameraFullScreen()
+            } label: {
+                Label(session.cameraFullScreenActive ? "Back to Screen" : "Camera Only", systemImage: "person.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .tint(session.cameraFullScreenActive ? .purple : nil)
+            .help("Record just the camera, full screen, until pressed again (\(HotKeys.cameraLabel))")
+        }
+        if session.secondCameraID != nil {
+            Button {
+                session.switchCamera()
+            } label: {
+                Label(session.usingSecondCamera ? "Camera 2 live — use Camera 1" : "Camera 1 live — use Camera 2", systemImage: "camera.rotate")
+                    .frame(maxWidth: .infinity)
+            }
+            .help("Switch cameras (\(HotKeys.switchCameraLabel))")
+        }
+        }
+        .controlSize(.large)
+        .disabled(!live)
     }
 
     // MARK: Mic

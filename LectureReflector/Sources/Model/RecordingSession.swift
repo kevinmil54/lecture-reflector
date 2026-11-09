@@ -3,6 +3,7 @@ import SwiftUI
 import AVFoundation
 import CoreMedia
 import ScreenCaptureKit
+import UniformTypeIdentifiers
 
 /// An app offered in the Demo apps list.
 struct DemoAppChoice: Identifiable, Hashable {
@@ -38,6 +39,16 @@ final class RecordingSession: ObservableObject {
         didSet { pipeline.slides.crop = slideCrop }
     }
     @Published var selectedCameraID: String?
+    /// Optional second camera (e.g. the second display's), chosen in the Sources list.
+    @Published var secondCameraID: String? {
+        didSet { UserDefaults.standard.set(secondCameraID, forKey: "secondCameraID") }
+    }
+    /// Which camera is live right now (the first or the second).
+    @Published var usingSecondCamera = false
+    /// When on, ⌃⌥S also changes camera: main screen → first camera, second screen → second camera.
+    @Published var cameraFollowsScreen: Bool {
+        didSet { UserDefaults.standard.set(cameraFollowsScreen, forKey: "cameraFollowsScreen") }
+    }
     @Published var selectedMicID: String?
     @Published var layout: Layout = .rectanglePiP {
         didSet { pipeline.layout = layout }
@@ -58,16 +69,65 @@ final class RecordingSession: ObservableObject {
     @Published var errorMessage: String?
     /// Name of the demo app being recorded instead of the slides, if any.
     @Published var demoAppName: String?
+    /// True while the camera is recorded full screen (⌃⌥C), until toggled back.
+    @Published var cameraFullScreenActive = false
+    /// Windows open right now (kept current during a preview), and the ones
+    /// ticked to switch between in the Monitor.
+    @Published var openWindows: [SCWindow] = []
+    @Published var pickedWindowIDs: Set<CGWindowID> = []
+    /// The demo-type window being recorded right now, if any.
+    @Published var capturedDemoWindowID: CGWindowID?
+    /// Comma-separated title fragments of windows that are never recorded.
+    @Published var neverRecordText: String {
+        didSet {
+            UserDefaults.standard.set(neverRecordText, forKey: "neverRecordTitles")
+            SlideCapture.neverRecordTitles = Self.parseTitles(neverRecordText)
+        }
+    }
+    static let defaultNeverRecord = "Speaker View, reveal.js - Notes"
+    static func parseTitles(_ text: String) -> [String] {
+        text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    }
+    private var layoutBeforeCameraFullScreen: Layout?
+    private let hotKeys = HotKeys()
 
     // MARK: Settings (persisted)
 
     @Published var whisperModel: String {
         didSet { UserDefaults.standard.set(whisperModel, forKey: "whisperModel") }
     }
+    /// The deck's Quarto source (.qmd), chosen per launch. When set, the
+    /// transcript and the deck's speaker notes are corrected from it.
+    @Published var deckURL: URL?
+    /// Name of the Ollama model that makes the corrections.
+    @Published var correctionModel: String {
+        didSet { UserDefaults.standard.set(correctionModel, forKey: "correctionModel") }
+    }
+    @Published var correctionEnabled: Bool {
+        didSet { UserDefaults.standard.set(correctionEnabled, forKey: "correctionEnabled") }
+    }
+    /// Digital camera zoom (1…4×) and pan (-1…1), kept across launches.
+    @Published var cameraZoom: Double {
+        didSet { UserDefaults.standard.set(cameraZoom, forKey: "cameraZoom"); applyFraming() }
+    }
+    @Published var cameraPanX: Double {
+        didSet { UserDefaults.standard.set(cameraPanX, forKey: "cameraPanX"); applyFraming() }
+    }
+    @Published var cameraPanY: Double {
+        didSet { UserDefaults.standard.set(cameraPanY, forKey: "cameraPanY"); applyFraming() }
+    }
+    private func applyFraming() {
+        pipeline.framing = CameraFraming(zoom: cameraZoom, panX: cameraPanX, panY: cameraPanY)
+    }
+    func resetZoom() {
+        cameraZoom = 1; cameraPanX = 0; cameraPanY = 0
+    }
+
     @Published var mirrorCamera: Bool {
         didSet {
             UserDefaults.standard.set(mirrorCamera, forKey: "mirrorCamera")
             pipeline.mirrorCamera = mirrorCamera
+        applyFraming()
         }
     }
     @Published var countdownEnabled: Bool {
@@ -95,7 +155,7 @@ final class RecordingSession: ObservableObject {
     @Published var demoApps: [String: String] {
         didSet {
             UserDefaults.standard.set(demoApps, forKey: "demoApps")
-            pipeline.slides.demoBundleIDs = Set(demoApps.keys)
+            pipeline.slides.demoBundleIDs = []
         }
     }
     /// Lecturer position/size per floating layout, remembered between launches.
@@ -120,14 +180,24 @@ final class RecordingSession: ObservableObject {
         outputFolder = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first
             ?? FileManager.default.homeDirectoryForCurrentUser
         whisperModel = defaults.string(forKey: "whisperModel") ?? "base"
+        correctionModel = defaults.string(forKey: "correctionModel") ?? ContentCorrector.defaultModel
+        correctionEnabled = defaults.object(forKey: "correctionEnabled") as? Bool ?? true
         mirrorCamera = defaults.bool(forKey: "mirrorCamera")
+        cameraZoom = max(1, min(4, defaults.object(forKey: "cameraZoom") as? Double ?? 1))
+        cameraPanX = defaults.double(forKey: "cameraPanX")
+        cameraPanY = defaults.double(forKey: "cameraPanY")
+        let neverRecord = defaults.string(forKey: "neverRecordTitles") ?? Self.defaultNeverRecord
+        neverRecordText = neverRecord
+        SlideCapture.neverRecordTitles = Self.parseTitles(neverRecord)
+        cameraFollowsScreen = defaults.object(forKey: "cameraFollowsScreen") as? Bool ?? true
+        secondCameraID = defaults.string(forKey: "secondCameraID")
         countdownEnabled = defaults.object(forKey: "countdownEnabled") as? Bool ?? true
         showCursor = defaults.bool(forKey: "showCursor")
         SlideCapture.showsCursor = defaults.bool(forKey: "showCursor")
         autoLevelEnabled = defaults.object(forKey: "autoLevelEnabled") as? Bool ?? true
         voiceCleanupEnabled = defaults.object(forKey: "voiceCleanupEnabled") as? Bool ?? true
         demoApps = defaults.dictionary(forKey: "demoApps") as? [String: String] ?? [:]
-        pipeline.slides.demoBundleIDs = Set(demoApps.keys)
+        pipeline.slides.demoBundleIDs = []
 
         pipeline.mirrorCamera = mirrorCamera
         if let data = defaults.data(forKey: "lecturerPlacements"),
@@ -143,6 +213,19 @@ final class RecordingSession: ObservableObject {
            let stored = try? JSONDecoder().decode(LecturerPlacement.self, from: data) {
             slidePlacement = stored
             pipeline.setSlidePlacement(stored)
+        }
+        hotKeys.onAction = { [weak self] action in
+            guard let self else { return }
+            switch action {
+            case .switchScreen: Task { await self.switchScreen() }
+            case .cameraFullScreen: self.toggleCameraFullScreen()
+            case .switchCamera: self.switchCamera()
+            case .switchApp: Task { await self.switchApp() }
+            }
+        }
+        hotKeys.register()
+        pipeline.slides.onCapturedWindow = { [weak self] id, demo in
+            DispatchQueue.main.async { self?.capturedDemoWindowID = demo ? id : nil }
         }
         pipeline.slides.onSourceChanged = { [weak self] description in
             DispatchQueue.main.async {
@@ -300,10 +383,12 @@ final class RecordingSession: ObservableObject {
     func refreshSources() async {
         do {
             windows = try await SlideCapture.availableWindows()
+            openWindows = windows
             displays = try await SlideCapture.availableDisplays()
         } catch {
             errorMessage = "Could not list windows — grant Screen Recording permission in System Settings ▸ Privacy & Security, then relaunch. (\(error.localizedDescription))"
         }
+        startWindowRefresh()
         cameras = CameraCapture.videoDevices
         microphones = CameraCapture.audioDevices
         if selectedSlideSource == nil {
@@ -320,6 +405,16 @@ final class RecordingSession: ObservableObject {
     }
 
     func startPreview() async {
+        // The window list can be stale (windows opened, closed or moved since
+        // launch): refresh it so the chosen window is a live one.
+        let wasWindow = selectedSourceID?.hasPrefix("window:") == true
+        if let fresh = try? await SlideCapture.availableWindows() { windows = fresh; openWindows = fresh }
+        if let fresh = try? await SlideCapture.availableDisplays(), !fresh.isEmpty { displays = fresh }
+        if wasWindow, selectedSlideSource == nil {
+            errorMessage = "The slides window you chose is no longer open (or is minimized). Pick it again in the Slides list."
+            selectedSourceID = windows.first.map { Self.sourceID($0) } ?? displays.first.map { Self.sourceID($0) }
+            return
+        }
         guard let slideSource = selectedSlideSource else {
             errorMessage = "Choose the window showing your slides first."
             return
@@ -342,11 +437,212 @@ final class RecordingSession: ObservableObject {
             try await pipeline.startPreview(slideSource: slideSource, cameraDevice: cameraDevice, microphone: microphone)
             phase = .previewing
         } catch {
-            errorMessage = "Could not start preview: \(error.localizedDescription)"
+            await pipeline.stopAll()
+            let ns = error as NSError
+            errorMessage = "Could not start preview: \(error.localizedDescription) [\(ns.domain) \(ns.code)]. If the slides source is a window, make sure it is open and not minimized, or choose Entire screen. If this keeps happening, quit and reopen Lecture Reflector."
+        }
+    }
+
+    // MARK: Screen switching and camera full screen (global hotkeys)
+
+    /// Displays with the main screen (menu bar) first, then the others.
+    private var orderedDisplays: [SCDisplay] {
+        displays.filter { $0.displayID == CGMainDisplayID() } + displays.filter { $0.displayID != CGMainDisplayID() }
+    }
+
+    /// ⌃⌥S: record the other screen. Cycles through the displays, so with two
+    /// screens it flips between them. From a window source it goes to the
+    /// main screen first. The speaker notes stay on whichever screen you are
+    /// not recording.
+    func switchScreen() async {
+        guard phase == .previewing || phase == .recording || phase == .countdown else { return }
+        await refreshDisplays()
+        let list = orderedDisplays
+        guard list.count > 0 else { return }
+        let currentIndex = list.firstIndex { Self.sourceID($0) == selectedSourceID }
+        let next = list[currentIndex.map { ($0 + 1) % list.count } ?? 0]
+        do {
+            try await pipeline.slides.switchToDisplay(next)
+            selectedSourceID = Self.sourceID(next)
+            if cameraFollowsScreen, secondCameraID != nil {
+                setSecondCamera(next.displayID != CGMainDisplayID())
+            }
+            // The camera was full screen: switching screens shows the screen again.
+            if cameraFullScreenActive { toggleCameraFullScreen() }
+            pipeline.markEvent("Switched to \(next.displayID == CGMainDisplayID() ? "main" : "second") screen")
+        } catch {
+            errorMessage = "Could not switch screens: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: What to record (slides, apps, picked windows)
+
+    /// Something the Monitor can switch the recording to.
+    enum RecordTarget: Identifiable, Equatable {
+        case slides
+        case app(bundleID: String, name: String)
+        case window(id: CGWindowID, label: String)
+
+        var id: String {
+            switch self {
+            case .slides: return "slides"
+            case .app(let bundleID, _): return "app:\(bundleID)"
+            case .window(let id, _): return "window:\(id)"
+            }
+        }
+        var label: String {
+            switch self {
+            case .slides: return "Slides"
+            case .app(_, let name): return "\(name) (front window)"
+            case .window(_, let label): return label
+            }
+        }
+    }
+
+    static func windowLabel(_ window: SCWindow) -> String {
+        let app = window.owningApplication?.applicationName ?? "App"
+        let title = (window.title ?? "").trimmingCharacters(in: .whitespaces)
+        let text = title.isEmpty ? app : "\(app) — \(title)"
+        return text.count > 60 ? String(text.prefix(59)) + "…" : text
+    }
+
+    /// Open windows other than the slides window, for picking extras.
+    var pickableWindows: [SCWindow] {
+        openWindows
+            .filter { Self.sourceID($0) != selectedSourceID }
+            .sorted { Self.windowLabel($0).localizedCaseInsensitiveCompare(Self.windowLabel($1)) == .orderedAscending }
+    }
+
+    func setPicked(_ window: SCWindow, picked: Bool) {
+        if picked { pickedWindowIDs.insert(window.windowID) } else { pickedWindowIDs.remove(window.windowID) }
+    }
+
+    /// The slides, each ticked demo app, then each picked window that is still open.
+    var targets: [RecordTarget] {
+        let windows = pickableWindows
+            .filter { pickedWindowIDs.contains($0.windowID) }
+            .map { RecordTarget.window(id: $0.windowID, label: Self.windowLabel($0)) }
+        return [.slides] + windows
+    }
+
+    var activeTarget: RecordTarget {
+        let list = targets
+        if let id = capturedDemoWindowID, let match = list.first(where: { $0.id == "window:\(id)" }) {
+            return match
+        }
+        if let name = demoAppName,
+           let match = list.first(where: { if case .app(_, let n) = $0 { return n == name } else { return false } }) {
+            return match
+        }
+        return demoAppName == nil ? .slides : (list.first ?? .slides)
+    }
+
+    /// Records the chosen target. Window sources only.
+    @discardableResult
+    func select(_ target: RecordTarget) async -> Bool {
+        guard phase == .previewing || phase == .recording || phase == .countdown else { return false }
+        guard slidesSourceIsWindow else {
+            errorMessage = "Switching windows needs a window as the slides source, not an entire screen."
+            return false
+        }
+        let ok: Bool
+        switch target {
+        case .slides: ok = await pipeline.slides.show(bundleID: nil)
+        case .app(let bundleID, _): ok = await pipeline.slides.show(bundleID: bundleID)
+        case .window(let id, _): ok = await pipeline.slides.show(windowID: id)
+        }
+        if !ok { statusMessage = "Couldn't show \(target.label) — is it open and not minimized?" }
+        return ok
+    }
+
+    /// ⌃⌥A: the next target in the list (slides → apps → picked windows → slides).
+    func switchApp() async {
+        let list = targets
+        guard list.count > 1 else {
+            errorMessage = "Tick apps under Demo apps, or pick windows under Windows to switch between, first."
+            return
+        }
+        let current = list.firstIndex(of: activeTarget) ?? 0
+        for step in 1...list.count {
+            if await select(list[(current + step) % list.count]) { return }
+        }
+    }
+
+    private var windowRefreshTask: Task<Void, Never>?
+
+    /// Keeps the list of open windows current.
+    func startWindowRefresh() {
+        guard windowRefreshTask == nil else { return }
+        windowRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                guard let self, !Task.isCancelled else { return }
+                if let fresh = try? await SlideCapture.availableWindows() {
+                    self.openWindows = fresh
+                    // Keep the Slides list current while idle, so it never offers a window that closed.
+                    if self.phase == .idle {
+                        self.windows = fresh
+                        if let displays = try? await SlideCapture.availableDisplays(), !displays.isEmpty {
+                            self.displays = displays
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// ⌃⌥V: switch between the first and second camera.
+    func switchCamera() {
+        guard phase == .previewing || phase == .recording || phase == .countdown else { return }
+        guard secondCameraID != nil else {
+            errorMessage = "Choose a second camera in Sources first."
+            return
+        }
+        setSecondCamera(!usingSecondCamera)
+    }
+
+    private func setSecondCamera(_ useSecond: Bool) {
+        guard useSecond != usingSecondCamera else { return }
+        let id = useSecond ? secondCameraID : selectedCameraID
+        guard let device = cameras.first(where: { $0.uniqueID == id }) else {
+            errorMessage = "That camera isn't connected."
+            return
+        }
+        do {
+            try pipeline.camera.switchCamera(to: device)
+            usingSecondCamera = useSecond
+            pipeline.markEvent("Camera: \(device.localizedName)")
+        } catch {
+            errorMessage = "Could not switch camera: \(error.localizedDescription)"
+        }
+    }
+
+    /// ⌃⌥C: record only the camera, full screen, until pressed again.
+    func toggleCameraFullScreen() {
+        guard phase == .previewing || phase == .recording || phase == .countdown else { return }
+        if cameraFullScreenActive {
+            layout = layoutBeforeCameraFullScreen ?? .rectanglePiP
+            layoutBeforeCameraFullScreen = nil
+            cameraFullScreenActive = false
+            pipeline.markEvent("Back from camera full screen")
+        } else {
+            layoutBeforeCameraFullScreen = layout
+            layout = .cameraOnly
+            cameraFullScreenActive = true
+            pipeline.markEvent("Camera full screen")
+        }
+    }
+
+    private func refreshDisplays() async {
+        if let fresh = try? await SlideCapture.availableDisplays(), !fresh.isEmpty {
+            displays = fresh
         }
     }
 
     func stopPreview() async {
+        if cameraFullScreenActive { toggleCameraFullScreen() }
+        usingSecondCamera = false
+        capturedDemoWindowID = nil
         await pipeline.stopAll()
         previewImage = nil
         slideSourceStatus = ""
@@ -472,13 +768,27 @@ final class RecordingSession: ObservableObject {
         transcribing = true
         statusMessage = "Starting transcription…"
         do {
-            let segments = try await transcriber.transcribe(mediaURL: movieURL, model: whisperModel) { [weak self] message in
+            var segments = try await transcriber.transcribe(mediaURL: movieURL, model: whisperModel) { [weak self] message in
                 Task { @MainActor in
                     self?.statusMessage = message
                 }
             }
+            var note = ""
+            if let deckURL, correctionEnabled {
+                // Whisper's own output is kept; the corrected files replace lecture.txt and lecture.srt.
+                try? Transcriber.writeRawTranscript(segments, to: folder)
+                do {
+                    let outcome = try await ContentCorrector.apply(deckURL: deckURL, model: correctionModel, to: segments, folder: folder) { [weak self] message in
+                        Task { @MainActor in self?.statusMessage = message }
+                    }
+                    segments = outcome.segments
+                    note = " " + outcome.summary
+                } catch {
+                    errorMessage = "The transcript was saved as Whisper heard it, without corrections from the deck. \(error.localizedDescription)"
+                }
+            }
             try Transcriber.writeTranscript(segments, to: folder)
-            statusMessage = "Saved video, transcript, and chapters."
+            statusMessage = "Saved video, transcript, and chapters." + note
         } catch {
             // The video is already safe on disk even if transcription fails.
             errorMessage = "The video was saved, but transcription failed: \(error.localizedDescription)"
@@ -509,6 +819,64 @@ final class RecordingSession: ObservableObject {
         if panel.runModal() == .OK, let url = panel.url {
             outputFolder = url
         }
+    }
+
+    // MARK: Correcting from the deck
+
+    func chooseDeck() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = ["qmd", "md", "txt"].compactMap { UTType(filenameExtension: $0) }
+        panel.prompt = "Choose Deck"
+        panel.message = "Choose the Quarto source (.qmd) of the deck you are lecturing from"
+        if panel.runModal() == .OK, let url = panel.url {
+            deckURL = url
+        }
+    }
+
+    /// Corrects an existing recording's transcript and the deck's speaker
+    /// notes from the chosen deck. Starts from Whisper's original output
+    /// (lecture-words-raw.json) when the recording has it.
+    func correctRecordingFromDeck() async {
+        if deckURL == nil { chooseDeck() }
+        guard let deckURL else { return }
+
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.directoryURL = lastOutputFolder ?? outputFolder
+        panel.prompt = "Choose Recording"
+        panel.message = "Choose a recording folder (the one with lecture.mp4 and lecture-words.json)"
+        guard panel.runModal() == .OK, let folder = panel.url else { return }
+
+        let hasRaw = FileManager.default.fileExists(atPath: folder.appendingPathComponent(WordTranscript.rawFileName).path)
+        let source: WordTranscript
+        do {
+            source = try WordTranscript.load(from: folder, fileName: hasRaw ? WordTranscript.rawFileName : WordTranscript.fileName)
+        } catch {
+            errorMessage = "“\(folder.lastPathComponent)” has no word-timed transcript yet. Use “Cut Video from Edited Transcript…” and choose its folder to transcribe it first."
+            return
+        }
+        let segments = source.segments.map {
+            TranscriptSegment(start: $0.start, end: $0.end, text: $0.text, words: $0.words)
+        }
+
+        transcribing = true
+        statusMessage = "Correcting from the deck…"
+        do {
+            if !hasRaw { try Transcriber.writeRawTranscript(segments, to: folder) }
+            let outcome = try await ContentCorrector.apply(deckURL: deckURL, model: correctionModel, to: segments, folder: folder) { [weak self] message in
+                Task { @MainActor in self?.statusMessage = message }
+            }
+            try Transcriber.writeTranscript(outcome.segments, to: folder)
+            lastOutputFolder = folder
+            statusMessage = outcome.summary
+        } catch {
+            errorMessage = "Could not correct the recording: \(error.localizedDescription)"
+            statusMessage = ""
+        }
+        transcribing = false
     }
 
     // MARK: Editing by transcript

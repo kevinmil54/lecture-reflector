@@ -35,10 +35,18 @@ struct WordTranscript: Codable {
         return try JSONDecoder().decode(WordTranscript.self, from: data)
     }
 
-    func write(to folder: URL) throws {
+    /// Word timing as Whisper produced it, before any correction from the deck.
+    static let rawFileName = "lecture-words-raw.json"
+
+    func write(to folder: URL, fileName: String = WordTranscript.fileName) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(self).write(to: folder.appendingPathComponent(Self.fileName), options: .atomic)
+        try encoder.encode(self).write(to: folder.appendingPathComponent(fileName), options: .atomic)
+    }
+
+    static func load(from folder: URL, fileName: String) throws -> WordTranscript {
+        let data = try Data(contentsOf: folder.appendingPathComponent(fileName))
+        return try JSONDecoder().decode(WordTranscript.self, from: data)
     }
 }
 

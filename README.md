@@ -31,11 +31,24 @@ See [LectureReflector_users_guide.md](LectureReflector_users_guide.md) for the f
 5. The MP4 is finalized in seconds; transcription runs after and saves `lecture.txt` / `lecture.srt` / `chapters.txt` next to `lecture.mp4` in `Lecture Reflector <title> <date>` inside your chosen output folder (default: Movies).
 6. To cut the video by its transcript, delete lines or words in `lecture-edit.txt` and click **Cut Video from Edited Transcript…**. This writes `lecture-edited.mp4` plus matching `.srt`/`.txt`; the original is untouched. Word timing comes from WhisperKit (`lecture-words.json`); the cut logic is in `Sources/Edit/`. From the command line: `LectureReflector --cut "<recording folder>"`.
 
+## Two screens: shortcuts
+
+With a two-display setup, put the deck's speaker notes on one screen and record the other. Two system-wide shortcuts work from any app, while previewing or recording:
+
+- **⌃⌥S** records the other screen (cycles through your displays; the speaker notes stay on the screen you're not recording).
+- **⌃⌥C** records just the camera, full screen, until you press it again (or press ⌃⌥S).
+
+Both are marked in `chapters.txt`, and the Monitor panel shows which screen is being recorded.
+
 ## Permissions
 
 - **Screen Recording** — prompted on first launch (needed to list/capture windows). After granting, quit and relaunch.
 - **Camera** and **Microphone** — prompted on first Start Preview.
 - The app is signed with the "Apple Development: Kevin Miller" certificate (team `YCTW9YH58J` in `project.yml`), so permission grants persist across rebuilds. If macOS ever silently denies screen capture without prompting (stale TCC entry), run `tccutil reset ScreenCapture com.kevinmiller.lecture_reflector` and relaunch.
+
+## Correcting from the deck
+
+Choose the deck's Quarto source (`.qmd`) under Settings > Talk content. After Whisper finishes, a local model in [Ollama](https://ollama.com) (default `qwen2.5:7b`; run `ollama pull qwen2.5:7b` once) uses the deck's slide text, speaker notes and distinctive terms to fix misheard names and terms in `lecture.txt`, `lecture.srt` and `lecture-edit.txt`, and to proofread the deck's speaker notes. Nothing leaves the Mac. Whisper's original stays in `lecture-raw.txt`, `lecture-raw.srt` and `lecture-words-raw.json`; every change is listed in `corrections.txt`; corrected notes are written to `<deck>-corrected.qmd` and the deck itself is never modified. "Correct a Recording from the Deck…" does the same for an existing recording. The code is in `Sources/Transcribe/ContentCorrector.swift`.
 
 ## Notes
 

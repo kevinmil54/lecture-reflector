@@ -12,6 +12,7 @@
 		2DCDBAA4D0508BFDD6378240 /* CameraCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1255F22AD1DF103F935743 /* CameraCapture.swift */; };
 		33DD23C20E5E784B48FDA0B8 /* MonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66D97D9DDC6D57B10693B761 /* MonitorView.swift */; };
 		3853ED42B41E32E029D0B07A /* RecordingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06266AF15FE2A2932592C198 /* RecordingSession.swift */; };
+		6853D18FDEAC8A6C3B4888E8 /* HotKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C58F952E408683A0B927FA /* HotKeys.swift */; };
 		8224DEB1FC822183B98740AD /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = D67E0F8AA6748152E588BA40 /* Transcriber.swift */; };
 		90B5C51310B5E0F0684AC485 /* EditExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53D4C7AD96F06C554F04F2E /* EditExporter.swift */; };
 		98F1D8BE19DAEC7938CE0513 /* Pipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF40DA4AB193670C3928E9D /* Pipeline.swift */; };
@@ -22,6 +23,7 @@
 		B1C8436FB090C8D0D8568CDA /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3862C0A3FEFB3DEA9FFCDA24 /* WhisperKit */; };
 		BFA0C368945C48C42840620B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8952AD5B4020B4CAA9CC8706 /* ContentView.swift */; };
 		E28A97536A2E0B240032C126 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6560B2068BDC729670E47461 /* Assets.xcassets */; };
+		E948EDA5C526D7E4DB5128EB /* ContentCorrector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A519ACCB910F44AFD30567 /* ContentCorrector.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 		66D97D9DDC6D57B10693B761 /* MonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitorView.swift; sourceTree = "<group>"; };
 		84BE0C05C25778E2BF58C5B2 /* SlideCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideCapture.swift; sourceTree = "<group>"; };
 		8952AD5B4020B4CAA9CC8706 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		90C58F952E408683A0B927FA /* HotKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeys.swift; sourceTree = "<group>"; };
+		A3A519ACCB910F44AFD30567 /* ContentCorrector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentCorrector.swift; sourceTree = "<group>"; };
 		ABF40DA4AB193670C3928E9D /* Pipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pipeline.swift; sourceTree = "<group>"; };
 		D4C04352D896B9AE128152CA /* Compositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compositor.swift; sourceTree = "<group>"; };
 		D67E0F8AA6748152E588BA40 /* Transcriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcriber.swift; sourceTree = "<group>"; };
@@ -82,6 +86,7 @@
 		7E2C11933EDAE90059DBF2D1 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				90C58F952E408683A0B927FA /* HotKeys.swift */,
 				ECC4B8785BD0C3CEDDF344AE /* Layout.swift */,
 				06266AF15FE2A2932592C198 /* RecordingSession.swift */,
 			);
@@ -100,6 +105,7 @@
 		B63568F41650CBBA594B4D80 /* Transcribe */ = {
 			isa = PBXGroup;
 			children = (
+				A3A519ACCB910F44AFD30567 /* ContentCorrector.swift */,
 				D67E0F8AA6748152E588BA40 /* Transcriber.swift */,
 			);
 			path = Transcribe;
@@ -233,8 +239,10 @@
 			files = (
 				2DCDBAA4D0508BFDD6378240 /* CameraCapture.swift in Sources */,
 				0D1AACB08E1CD8DF1FE2F3FF /* Compositor.swift in Sources */,
+				E948EDA5C526D7E4DB5128EB /* ContentCorrector.swift in Sources */,
 				BFA0C368945C48C42840620B /* ContentView.swift in Sources */,
 				90B5C51310B5E0F0684AC485 /* EditExporter.swift in Sources */,
+				6853D18FDEAC8A6C3B4888E8 /* HotKeys.swift in Sources */,
 				2811877635357174ADFB9DB2 /* Layout.swift in Sources */,
 				9AB551E1430E31EF5F8B1BF8 /* LectureReflectorApp.swift in Sources */,
 				33DD23C20E5E784B48FDA0B8 /* MonitorView.swift in Sources */,

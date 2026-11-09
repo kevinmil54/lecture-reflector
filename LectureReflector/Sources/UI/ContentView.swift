@@ -46,6 +46,9 @@ struct ContentView: View {
                         }
                     }
                 }
+                Text("Shortcuts, from any app: \(HotKeys.switchScreenLabel) records the other screen (keep your speaker notes on the screen you're not recording); \(HotKeys.cameraLabel) records just the camera, full screen, until you press it again.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 if session.phase != .idle, !session.slideSourceStatus.isEmpty {
                     LabeledContent("Capturing") {
                         Text(session.slideSourceStatus)
@@ -59,6 +62,18 @@ struct ContentView: View {
                     ForEach(session.cameras, id: \.uniqueID) { device in
                         Text(device.localizedName).tag(Optional(device.uniqueID))
                     }
+                }
+                Picker("Second camera", selection: $session.secondCameraID) {
+                    Text("None").tag(String?.none)
+                    ForEach(session.cameras.filter { $0.uniqueID != session.selectedCameraID }, id: \.uniqueID) { device in
+                        Text(device.localizedName).tag(Optional(device.uniqueID))
+                    }
+                }
+                if session.secondCameraID != nil {
+                    Toggle("Switch camera along with the screen", isOn: $session.cameraFollowsScreen)
+                    Text("Main screen uses the first camera, the second screen the second. \(HotKeys.switchCameraLabel) or the Monitor button switches cameras on their own.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 Picker("Microphone", selection: $session.selectedMicID) {
                     ForEach(session.microphones, id: \.uniqueID) { device in
@@ -83,25 +98,28 @@ struct ContentView: View {
                 .disabled(session.phase != .idle)
             }
 
-            Section("Demo apps") {
-                let choices = session.demoAppChoices
-                if choices.isEmpty {
-                    Text("Open the apps you want to demonstrate, then click Refresh Sources.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(choices) { choice in
-                        Toggle(choice.name, isOn: Binding(
-                            get: { session.demoApps[choice.id] != nil },
-                            set: { session.setDemoApp(choice, enabled: $0) }
-                        ))
-                    }
-                }
-                Text(session.slidesSourceIsWindow
-                     ? "While one of these apps is in front, its window is recorded instead of the slides, with the mouse pointer. Switch back to your slides app to return."
-                     : "Demo apps need a window as the Slides source, not Entire screen.")
+            Section("Never record") {
+                TextField("Window titles", text: $session.neverRecordText)
+                Text("Windows whose title contains any of these (comma-separated) are never recorded, even when they belong to the slides app or sit on a screen you record: reveal.js's speaker view is \"Speaker View\". Changes apply to the next preview, or within a second on an entire-screen recording.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            if session.slidesSourceIsWindow {
+                Section("Windows to switch between (Obsidian, Zotero, browsers…)") {
+                    if session.pickableWindows.isEmpty {
+                        Text("No other windows are open.").font(.caption).foregroundStyle(.secondary)
+                    }
+                    ForEach(session.pickableWindows, id: \.windowID) { window in
+                        Toggle(RecordingSession.windowLabel(window), isOn: Binding(
+                            get: { session.pickedWindowIDs.contains(window.windowID) },
+                            set: { session.setPicked(window, picked: $0) }
+                        ))
+                    }
+                    Text("Tick the windows you want to show (Obsidian, Zotero, several Safari or Chrome windows…). They are listed in the Monitor, where you click one to record it; the slides stay in the list as Slides. The list updates as windows open and close, and a window shows only while it is open and not minimized. Speaker-view windows never appear.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section("Crop slides") {
@@ -175,7 +193,33 @@ struct ContentView: View {
                     }
                 }
                 .disabled(session.transcribing)
+                LabeledContent("Talk content") {
+                    Text(session.deckURL?.lastPathComponent ?? "None")
+                        .truncationMode(.middle)
+                        .help(session.deckURL?.path ?? "Choose the deck's .qmd file to correct the transcript and speaker notes from it.")
+                }
+                HStack {
+                    Button("Choose Deck (.qmd)…") { session.chooseDeck() }
+                    if session.deckURL != nil {
+                        Button("Clear") { session.deckURL = nil }
+                    }
+                }
+                .disabled(session.transcribing)
+                Toggle("Correct transcript and notes from the deck", isOn: $session.correctionEnabled)
+                    .disabled(session.deckURL == nil)
+                    .help("After transcribing, a local model in Ollama fixes names and terms Whisper misheard, using the deck's slide text and speaker notes. Whisper's original is kept as lecture-raw.txt and lecture-raw.srt; the deck itself is never changed (corrected notes go to a copy).")
+                TextField("Ollama model", text: $session.correctionModel)
+                    .disabled(session.deckURL == nil || !session.correctionEnabled)
                 Toggle("Mirror camera", isOn: $session.mirrorCamera)
+                LabeledContent("Camera zoom") {
+                    Slider(value: $session.cameraZoom, in: 1...4)
+                    Text(String(format: "%.1f×", session.cameraZoom)).monospacedDigit().frame(width: 36, alignment: .trailing)
+                }
+                if session.cameraZoom > 1.001 {
+                    LabeledContent("Move left/right") { Slider(value: $session.cameraPanX, in: -1...1) }
+                    LabeledContent("Move up/down") { Slider(value: $session.cameraPanY, in: -1...1) }
+                    Button("Reset Zoom") { session.resetZoom() }
+                }
                 Toggle("3-second countdown", isOn: $session.countdownEnabled)
                 Toggle("Show mouse pointer in slides", isOn: $session.showCursor)
                     .help("Off by default. Turn on if you point at things with the mouse while lecturing.")
@@ -209,6 +253,17 @@ struct ContentView: View {
                         session.revealLastOutput()
                     }
                 }
+            }
+
+            Section("Correct from the deck") {
+                Text("Fix names and terms in an existing recording's transcript, and in the deck's speaker notes, using the deck's text. Needs the Ollama app running.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Button("Correct a Recording from the Deck…") {
+                    Task { await session.correctRecordingFromDeck() }
+                }
+                .disabled(session.transcribing || session.editing
+                          || session.phase == .recording || session.phase == .finishing)
             }
 
             Section("Edit by transcript") {
@@ -391,13 +446,6 @@ struct ContentView: View {
                         .multilineTextAlignment(.center)
                 }
                 .foregroundStyle(.secondary)
-            }
-
-            if let value = session.countdownValue {
-                Text("\(value)")
-                    .font(.system(size: 140, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .shadow(radius: 12)
             }
 
             if session.phase == .recording {

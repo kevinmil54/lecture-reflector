@@ -48,6 +48,7 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     private var currentWindowID: CGWindowID?
     private var currentWindowSize: CGSize = .zero
     private var watchdog: Task<Void, Never>?
+    private var displayWatcher: Task<Void, Never>?
 
     // Demo state. `_demoActive` and `_demoBundleIDs` are read from several
     // queues, so they sit behind `lock`; the rest is touched by start/stop
@@ -58,6 +59,12 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     private var slideWindowID: CGWindowID?
     /// The demo app currently shown, so a switch between demo apps is reported.
     private var demoPID: pid_t?
+    /// The frontmost app other than Lecture Reflector, as of the last check.
+    private var lastFrontPID: pid_t?
+    /// Set by a manual switch: automatic following is paused until some other
+    /// app than this one comes to the front (so a switch from the Monitor
+    /// sticks even if macOS refuses to raise the target app).
+    private var holdFrontPID: pid_t?
 
     // Frames are copied out of ScreenCaptureKit's buffer pool into our own
     // buffers. Holding on to SCK's IOSurfaces (as the compositor and chapter
@@ -80,6 +87,10 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     /// slides come back. Called on an arbitrary queue.
     var onDemoChanged: ((String?) -> Void)?
 
+    /// Called whenever a window capture starts, with its window ID and
+    /// whether it is a demo (non-slides) window. Arbitrary queue.
+    var onCapturedWindow: ((CGWindowID, Bool) -> Void)?
+
     /// Bundle IDs of the apps whose windows replace the slides while frontmost.
     var demoBundleIDs: Set<String> {
         get { lock.withLock { _demoBundleIDs } }
@@ -95,6 +106,22 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     /// default: a pointer wandering over the deck is a distraction in the
     /// recording. Call `applyConfiguration()` after changing it mid-capture.
     static var showsCursor = false
+
+    /// Windows whose title contains any of these (case-insensitive) are never
+    /// recorded: not offered as a source, not followed, not shown as a demo,
+    /// and cut out of entire-screen recordings. Meant for reveal.js's speaker
+    /// view. Set from the settings.
+    static var neverRecordTitles: [String] {
+        get { neverRecordLock.withLock { _neverRecordTitles } }
+        set { neverRecordLock.withLock { _neverRecordTitles = newValue.filter { !$0.isEmpty } } }
+    }
+    nonisolated(unsafe) private static var _neverRecordTitles: [String] = []
+    private static let neverRecordLock = NSLock()
+
+    static func isNeverRecorded(title: String?) -> Bool {
+        guard let title = title?.lowercased(), !title.isEmpty else { return false }
+        return neverRecordTitles.contains { title.contains($0.lowercased()) }
+    }
 
     /// Re-sends the stream configuration to a running stream, e.g. after
     /// `showsCursor` changes.
@@ -139,6 +166,7 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
             && window.windowLayer == 0
             && window.frame.width >= 400
             && window.frame.height >= 300
+            && !isNeverRecorded(title: window.title)
     }
 
     // MARK: - Start / stop
@@ -156,6 +184,21 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         }
     }
 
+    /// Live switch to another whole display (the screen-switch hotkey). Unlike
+    /// `start`, it keeps the last frame so the recording holds a frozen frame
+    /// for an instant instead of flashing black.
+    func switchToDisplay(_ display: SCDisplay) async throws {
+        watchdog?.cancel()
+        if let watchdog { await watchdog.value }
+        watchdog = nil
+        followedPID = nil
+        followedTitle = nil
+        slideWindowID = nil
+        demoPID = nil
+        lock.withLock { _demoActive = false }
+        try await startStream(display: display)
+    }
+
     func stop() async {
         watchdog?.cancel()
         if let watchdog { await watchdog.value }
@@ -166,6 +209,8 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         currentWindowID = nil
         slideWindowID = nil
         demoPID = nil
+        holdFrontPID = nil
+        lastFrontPID = nil
         lock.withLock {
             _latest = nil
             _demoActive = false
@@ -174,6 +219,8 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     private func stopStream() async {
+        displayWatcher?.cancel()
+        displayWatcher = nil
         if let stream {
             try? await stream.stopCapture()
         }
@@ -197,20 +244,52 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         let title = window.title ?? ""
         let label = title.isEmpty ? app : "\(app) — \(title)"
         onSourceChanged?(demo ? "Demo: \(label)" : label)
+        onCapturedWindow?(window.windowID, demo)
     }
 
     private func startStream(display: SCDisplay) async throws {
         await stopStream()
         lock.withLock { _demoActive = false }
-        // Everything on that screen except Lecture Reflector's own windows.
+        // Everything on that screen except Lecture Reflector's own windows and
+        // any never-record window (the speaker view).
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-        let ownApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-        let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
+        let excluded = Self.excludedWindows(in: content)
+        let filter = SCContentFilter(display: display, excludingWindows: excluded)
         let config = Self.configuration(for: CGSize(width: display.width, height: display.height), cursor: Self.showsCursor)
         try await run(filter: filter, config: config)
         currentWindowID = nil
         lock.withLock { _sourcePointSize = display.frame.size }
-        onSourceChanged?("Entire screen (\(display.width)×\(display.height))")
+        startDisplayWatcher(display: display, excluded: Set(excluded.map(\.windowID)))
+        let name = display.displayID == CGMainDisplayID() ? "Main screen" : "Second screen"
+        onSourceChanged?("\(name) (\(display.width)×\(display.height))")
+    }
+
+    private static func excludedWindows(in content: SCShareableContent) -> [SCWindow] {
+        content.windows.filter {
+            $0.owningApplication?.bundleIdentifier == Bundle.main.bundleIdentifier
+                || isNeverRecorded(title: $0.title)
+        }
+    }
+
+    /// Once a second, re-cuts the excluded windows out of an entire-screen
+    /// capture, so a speaker view opened (or a Lecture Reflector window
+    /// shown) after the capture started is still left out.
+    private func startDisplayWatcher(display: SCDisplay, excluded initial: Set<CGWindowID>) {
+        displayWatcher?.cancel()
+        displayWatcher = Task { [weak self] in
+            var known = initial
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard !Task.isCancelled, let self, let stream = self.stream,
+                      let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+                else { continue }
+                let excluded = Self.excludedWindows(in: content)
+                let ids = Set(excluded.map(\.windowID))
+                guard ids != known else { continue }
+                known = ids
+                try? await stream.updateContentFilter(SCContentFilter(display: display, excludingWindows: excluded))
+            }
+        }
     }
 
     private func run(filter: SCContentFilter, config: SCStreamConfiguration) async throws {
@@ -267,7 +346,9 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         guard let slidesPID = followedPID else { return }
         let ids = demoBundleIDs
         let demo = isDemoActive
-        guard !ids.isEmpty || demo else { return }
+        // Automatic following only applies to ticked demo apps; with none
+        // ticked the Monitor's window list is the only way to switch.
+        guard !ids.isEmpty else { return }
 
         let front = await MainActor.run { () -> (pid: pid_t, bundleID: String?)? in
             guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
@@ -275,6 +356,11 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         }
         // Clicking Lecture Reflector (or its monitor panel) changes nothing.
         guard let front, front.bundleID != Bundle.main.bundleIdentifier else { return }
+        lastFrontPID = front.pid
+        if let hold = holdFrontPID {
+            if front.pid == hold { return }
+            holdFrontPID = nil
+        }
 
         if front.pid == slidesPID {
             if demo {
@@ -314,6 +400,68 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         }
     }
 
+    /// Manual switch from the Monitor or a shortcut: show a demo app's front
+    /// window (`bundleID`) or, with nil, the slides again. Window sources only.
+    /// Returns false when the app has no window to show.
+    @discardableResult
+    func show(bundleID: String?) async -> Bool {
+        guard watchdog != nil, let slidesPID = followedPID else { return false }
+        holdFrontPID = lastFrontPID
+        guard let bundleID else {
+            if isDemoActive { await leaveDemo() }
+            if let app = NSRunningApplication(processIdentifier: slidesPID) {
+                await MainActor.run { _ = app.activate() }
+            }
+            return true
+        }
+        guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first,
+              let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
+        else { return false }
+        let pid = app.processIdentifier
+        let candidates = content.windows.filter { $0.owningApplication?.processID == pid && Self.isCandidate($0) }
+        let target = Self.frontWindow(pid: pid).flatMap { front in candidates.first { $0.windowID == front.id } }
+            ?? candidates.max { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height }
+        guard let target else { return false }
+        do {
+            try await startStream(window: target, demo: true)
+        } catch {
+            return false
+        }
+        let changed = demoPID != pid
+        demoPID = pid
+        if changed { onDemoChanged?(target.owningApplication?.applicationName ?? bundleID) }
+        await MainActor.run { _ = app.activate() }
+        return true
+    }
+
+    /// Manual switch to one specific window (e.g. another Safari window).
+    /// It is recorded like a demo: pointer shown, no slide crop. Automatic
+    /// following pauses until some other app comes to the front.
+    @discardableResult
+    func show(windowID: CGWindowID) async -> Bool {
+        guard watchdog != nil else { return false }
+        guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true),
+              let window = content.windows.first(where: { $0.windowID == windowID }),
+              Self.isCandidate(window)
+        else { return false }
+        holdFrontPID = lastFrontPID
+        do {
+            try await startStream(window: window, demo: true)
+        } catch {
+            return false
+        }
+        let pid = window.owningApplication?.processID
+        demoPID = pid
+        let app = window.owningApplication?.applicationName ?? "App"
+        let title = window.title ?? ""
+        onDemoChanged?(title.isEmpty ? app : "\(app) — \(title)")
+        // Also bring the app forward so you see what is being recorded.
+        if let pid, let running = NSRunningApplication(processIdentifier: pid) {
+            await MainActor.run { _ = running.activate() }
+        }
+        return true
+    }
+
     /// Back to the slides window shown before the demo (or, if it is gone,
     /// the slides app's window with the same title, else its largest window).
     private func leaveDemo() async {
@@ -349,6 +497,9 @@ final class SlideCapture: NSObject, SCStreamOutput, SCStreamDelegate {
                   bounds.width >= 400, bounds.height >= 300
             else { continue }
             if let alpha = entry[kCGWindowAlpha as String] as? Double, alpha == 0 {
+                continue
+            }
+            if isNeverRecorded(title: entry[kCGWindowName as String] as? String) {
                 continue
             }
             return (number, bounds.size)

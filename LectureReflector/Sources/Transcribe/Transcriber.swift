@@ -62,17 +62,31 @@ final class Transcriber {
         return segments
     }
 
-    static func writeTranscript(_ segments: [TranscriptSegment], to folder: URL) throws {
-        let text = segments.map(\.text).joined(separator: "\n")
-        try text.write(to: folder.appendingPathComponent("lecture.txt"), atomically: true, encoding: .utf8)
+    /// Whisper's output exactly as heard, kept next to the corrected files
+    /// when the transcript is corrected from the deck.
+    static func writeRawTranscript(_ segments: [TranscriptSegment], to folder: URL) throws {
+        try segments.map(\.text).joined(separator: "\n")
+            .write(to: folder.appendingPathComponent("lecture-raw.txt"), atomically: true, encoding: .utf8)
+        try srtText(segments).write(to: folder.appendingPathComponent("lecture-raw.srt"), atomically: true, encoding: .utf8)
+        try WordTranscript(segments: segments.map {
+            WordSegment(start: $0.start, end: $0.end, text: $0.text, words: $0.words)
+        }).write(to: folder, fileName: WordTranscript.rawFileName)
+    }
 
+    static func srtText(_ segments: [TranscriptSegment]) -> String {
         var srt = ""
         for (index, segment) in segments.enumerated() {
             srt += "\(index + 1)\n"
             srt += "\(srtTime(segment.start)) --> \(srtTime(segment.end))\n"
             srt += "\(segment.text)\n\n"
         }
-        try srt.write(to: folder.appendingPathComponent("lecture.srt"), atomically: true, encoding: .utf8)
+        return srt
+    }
+
+    static func writeTranscript(_ segments: [TranscriptSegment], to folder: URL) throws {
+        let text = segments.map(\.text).joined(separator: "\n")
+        try text.write(to: folder.appendingPathComponent("lecture.txt"), atomically: true, encoding: .utf8)
+        try srtText(segments).write(to: folder.appendingPathComponent("lecture.srt"), atomically: true, encoding: .utf8)
 
         // For editing by transcript. A new transcription numbers its lines
         // afresh, so an earlier edit file is kept under another name rather

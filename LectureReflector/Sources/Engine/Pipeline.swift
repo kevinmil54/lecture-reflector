@@ -22,6 +22,7 @@ final class Pipeline {
     private let lock = NSLock()
     private var _layout: Layout = .rectanglePiP
     private var _mirrorCamera = false
+    private var _framing = CameraFraming.none
     private var _frozenCanvasSize: CGSize?
     private var _chapters: [TimeInterval] = []
     /// Labeled moments (switches to and from demo apps), seconds into the recording.
@@ -37,6 +38,12 @@ final class Pipeline {
     var layout: Layout {
         get { lock.withLock { _layout } }
         set { lock.withLock { _layout = newValue } }
+    }
+
+    /// Live-adjustable camera zoom and pan.
+    var framing: CameraFraming {
+        get { lock.withLock { _framing } }
+        set { lock.withLock { _framing = newValue } }
     }
 
     var mirrorCamera: Bool {
@@ -140,8 +147,8 @@ final class Pipeline {
     }
 
     private func renderTick() {
-        let (layout, mirror, frozenSize, savedPlacement, slidePlacement) = lock.withLock {
-            (_layout, _mirrorCamera, _frozenCanvasSize, _placements[_layout], _slidePlacement)
+        let (layout, mirror, frozenSize, savedPlacement, slidePlacement, framing) = lock.withLock {
+            (_layout, _mirrorCamera, _frozenCanvasSize, _placements[_layout], _slidePlacement, _framing)
         }
         let canvasSize = frozenSize ?? layout.canvasSize
 
@@ -152,7 +159,8 @@ final class Pipeline {
             canvasSize: canvasSize,
             mirrorCamera: mirror,
             placement: savedPlacement ?? layout.defaultPlacement,
-            slidePlacement: slidePlacement
+            slidePlacement: slidePlacement,
+            framing: framing
         ) else { return }
 
         if recorder.isRecording {
